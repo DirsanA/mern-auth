@@ -8,7 +8,7 @@ async function connectDB() {
   mongoose.connection.on("error", (err) => {
     console.log(err);
   });
-  await mongoose.connect(`mongodb://localhost:27017/mern-auth`);
+  await mongoose.connect(`${process.env.mongoURI}`);
   // create connection with mongoose with the database name of mern-auth
 }
 
