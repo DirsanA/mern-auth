@@ -158,3 +158,36 @@ export async function sendVerificationEmail(req, res) {
     return res.status(500).json({ success: false, message: "Server error" });
   }
 }
+
+export async function verifyOtp(req, res) {
+  const { userId, otp } = req.body;
+  if (!userId || !otp) {
+    console.log("Missing fields");
+    return res.status(400).json({ success: false, message: "Missing fields" });
+  }
+
+  try {
+    const user = await userModel.findById(userId);
+    if (!user) {
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found" });
+    }
+
+    if (user.otp !== otp) {
+      return res.status(400).json({ success: false, message: "Invalid OTP" });
+    }
+
+    user.accountVerified = true;
+    user.otp = undefined;
+    user.verifyOtpExpireAt = undefined;
+    await user.save();
+
+    return res
+      .status(200)
+      .json({ success: true, message: "Account verified successfully" });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ success: false, message: "Server error" });
+  }
+}
