@@ -111,16 +111,49 @@ export async function logoutUser(req, res) {
 }
 
 // sending verification to user email
-export async function verifyOtp(req, res) {
+export async function sendVerificationEmail(req, res) {
   try {
     const { userId } = req.body;
 
-    if (!userId) {
+    // if (!userId) {
+    //   return res
+    //     .status(400)
+    //     .json({ success: false, message: "User ID is required" });
+    // }
+    const user = await userModel.findById(userId);
+    if (!user) {
+      console.error("User not found");
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found" });
+    }
+
+    if (user.accountVerified) {
       return res
         .status(400)
-        .json({ success: false, message: "User ID is required" });
+        .json({ success: false, message: "User already verified" });
     }
-    const user = await userModel.findById(userId);
+    const otp = String(Math.floor(100000 + Math.random() * 900000));
+    user.otp = otp; // storing the otp to the user document
+    user.verifyOtpExpireAt = Date.now() + 24 * 60 * 60 * 1000; // setting expiry time to 24 hours
+
+    await user.save();
+
+    const mailOptions = {
+      from: process.env.SEND_EMAIL,
+      to: user.email,
+      subject: "Verify your email",
+      text: `Your OTP is ${otp}. It is valid for 24 hours.`,
+      html: `<p>Your OTP is <strong>${otp}</strong>. It is valid for 24 hours.</p>`,
+    };
+
+    // 6️⃣ Try sending email
+    try {
+      await transporter.sendMail(mailOptions);
+      console.log(`✅ OTP sent to ${user.email}`);
+    } catch (emailErr) {
+      console.error("❌ Email sending failed:", emailErr);
+    }
   } catch (err) {
     return res.status(500).json({ success: false, message: "Server error" });
   }
