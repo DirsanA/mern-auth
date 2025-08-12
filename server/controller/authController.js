@@ -174,13 +174,17 @@ export async function verifyOtp(req, res) {
         .json({ success: false, message: "User not found" });
     }
 
-    if (user.otp !== otp) {
+    if (user.verifyOtp === "" || user.verifyOtp !== otp) {
       return res.status(400).json({ success: false, message: "Invalid OTP" });
     }
 
+    if (user.verifyOtpExpireAt < Date.now()) {
+      return res.status(400).json({ success: false, message: "OTP expired" });
+    }
+
     user.accountVerified = true;
-    user.otp = undefined;
-    user.verifyOtpExpireAt = undefined;
+    user.otp = "";
+    user.verifyOtpExpireAt = 0;
     await user.save();
 
     return res
