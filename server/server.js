@@ -3,6 +3,8 @@ import cors from "cors";
 import "dotenv/config";
 import cookieParser from "cookie-parser";
 import connectDB from "./config/db.js";
+import userModel from "./models/userModel.js";
+import authRouter from "./routes/authRoutes.js";
 
 const app = express();
 
@@ -14,6 +16,12 @@ app.use(
 );
 app.use(express.json());
 app.use(cookieParser());
+
+// Api Endpoints
+app.get("/", (req, res) => {
+  res.send("API is running...");
+});
+app.use("/api/auth", authRouter);
 
 async function startServer() {
   try {
