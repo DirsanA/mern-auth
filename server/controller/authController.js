@@ -114,6 +114,13 @@ export async function logoutUser(req, res) {
 export async function verifyOtp(req, res) {
   try {
     const { userId } = req.body;
+
+    if (!userId) {
+      return res
+        .status(400)
+        .json({ success: false, message: "User ID is required" });
+    }
+    const user = await userModel.findById(userId);
   } catch (err) {
     return res.status(500).json({ success: false, message: "Server error" });
   }
