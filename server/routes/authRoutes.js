@@ -5,7 +5,11 @@ import {
   logoutUser,
   sendVerificationEmail,
   verifyOtp,
+  isAuthenticated,
+  resetOtpSend,
+  resetPassword,
 } from "../controller/authController.js";
+import { userAuth } from "../middleware/userAuth.js";
 
 const authRouter = express.Router();
 
@@ -14,8 +18,11 @@ authRouter.post("/register", registerUser);
 authRouter.post("/login", loginUser);
 authRouter.post("/logout", logoutUser);
 
-// OTP routes — no auth required
-authRouter.post("/verify-otp", sendVerificationEmail);
-authRouter.post("/verify-account", verifyOtp);
+// Protected routes (require authentication)
+authRouter.post("/send-verification", userAuth, sendVerificationEmail);
+authRouter.post("/verify-otp", userAuth, verifyOtp);
+authRouter.get("/check-auth", userAuth, isAuthenticated);
+authRouter.post("/send-reset-otp", resetOtpSend);
+authRouter.post("/reset-password", resetPassword);
 
 export default authRouter;
