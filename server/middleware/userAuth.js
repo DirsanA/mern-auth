@@ -3,7 +3,6 @@ import userModel from "../models/userModel.js";
 
 export const userAuth = async (req, res, next) => {
   try {
-    // 1) Get token from cookies
     const token = req.cookies.token;
 
     if (!token) {
@@ -13,10 +12,8 @@ export const userAuth = async (req, res, next) => {
       });
     }
 
-    // 2) Verify token
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-    // 3) Check if user still exists
     const currentUser = await userModel.findById(decoded.id);
     if (!currentUser) {
       return res.status(401).json({
@@ -25,8 +22,7 @@ export const userAuth = async (req, res, next) => {
       });
     }
 
-    // 4) Add user to request object
-    req.user = currentUser;
+    req.userId = currentUser._id; // ✅ store only the ID
     next();
   } catch (err) {
     console.error("Authentication error:", err);
