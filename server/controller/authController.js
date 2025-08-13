@@ -3,34 +3,29 @@ import jwt from "jsonwebtoken";
 import userModel from "../models/userModel.js";
 import transporter from "../config/nodemailer.js";
 
+// ✅ Register User
 export async function registerUser(req, res) {
   const { name, email, password } = req.body;
-
   if (!email || !name || !password) {
     return res.status(400).json({ success: false, message: "Missing fields" });
   }
 
   try {
-    // 1️⃣ Check if user exists
     const existingUser = await userModel.findOne({ email });
     if (existingUser) {
-      return res.status(400).json({
-        success: false,
-        message: "User already exists",
-      });
+      return res
+        .status(400)
+        .json({ success: false, message: "User already exists" });
     }
 
-    // 2️⃣ Hash password & save new user
     const hashedPassword = await bcrypt.hash(password, 10);
     const newUser = new userModel({ name, email, password: hashedPassword });
     await newUser.save();
 
-    // 3️⃣ Create JWT token
     const token = jwt.sign({ id: newUser._id }, process.env.JWT_SECRET, {
       expiresIn: "7d",
     });
 
-    // 4️⃣ Set cookie
     res.cookie("token", token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
@@ -38,54 +33,36 @@ export async function registerUser(req, res) {
       sameSite: process.env.NODE_ENV === "production" ? "None" : "Strict",
     });
 
-    // 5️⃣ Prepare welcome email
-    const mailOption = {
-      from: process.env.SEND_EMAIL,
-      to: email,
-      subject: "Welcome to Our Service",
-      text: `Hello ${name},\n\nThank you for registering!`,
-      html: `<p>Hello <strong>${name}</strong>,</p><p>Thank you for registering!</p>`,
-    };
-
-    // 6️⃣ Try sending email
-    try {
-      await transporter.sendMail(mailOption);
-      console.log(`✅ Welcome email sent to ${email}`);
-    } catch (emailErr) {
-      console.error("❌ Email sending failed:", emailErr);
-    }
-
-    return res.status(200).json({
+    res.status(200).json({
       success: true,
       message: "User registered successfully",
+      userId: newUser._id, // send userId so frontend can request OTP
     });
   } catch (err) {
     console.error(err);
-    return res.status(500).json({ success: false, message: "Server error" });
+    res.status(500).json({ success: false, message: "Server error" });
   }
 }
 
+// ✅ Login User
 export async function loginUser(req, res) {
   const { email, password } = req.body;
-
   if (!email || !password) {
     return res.status(400).json({ success: false, message: "Missing fields" });
   }
 
   try {
     const user = await userModel.findOne({ email });
-    if (!user) {
+    if (!user)
       return res
         .status(400)
         .json({ success: false, message: "User does not exist" });
-    }
 
     const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) {
+    if (!isMatch)
       return res
         .status(400)
         .json({ success: false, message: "Invalid credentials" });
-    }
 
     const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
       expiresIn: "7d",
@@ -98,45 +75,38 @@ export async function loginUser(req, res) {
       sameSite: process.env.NODE_ENV === "production" ? "None" : "Strict",
     });
 
-    return res.status(200).json({ success: true, message: "Login successful" });
+    res.status(200).json({ success: true, message: "Login successful" });
   } catch (err) {
     console.error(err);
-    return res.status(500).json({ success: false, message: "Server error" });
+    res.status(500).json({ success: false, message: "Server error" });
   }
 }
 
+// ✅ Logout User
 export async function logoutUser(req, res) {
   res.clearCookie("token");
-  return res.status(200).json({ success: true, message: "Logout successful" });
+  res.status(200).json({ success: true, message: "Logout successful" });
 }
 
-// sending verification to user email
+// ✅ Send OTP Email
 export async function sendVerificationEmail(req, res) {
   try {
     const { userId } = req.body;
-
-    // if (!userId) {
-    //   return res
-    //     .status(400)
-    //     .json({ success: false, message: "User ID is required" });
-    // }
     const user = await userModel.findById(userId);
-    if (!user) {
-      console.error("User not found");
+    if (!user)
       return res
         .status(404)
         .json({ success: false, message: "User not found" });
-    }
 
     if (user.accountVerified) {
       return res
         .status(400)
         .json({ success: false, message: "User already verified" });
     }
-    const otp = String(Math.floor(100000 + Math.random() * 900000));
-    user.otp = otp; // storing the otp to the user document
-    user.verifyOtpExpireAt = Date.now() + 24 * 60 * 60 * 1000; // setting expiry time to 24 hours
 
+    const otp = String(Math.floor(100000 + Math.random() * 900000));
+    user.otp = otp;
+    user.otpExpireAt = Date.now() + 24 * 60 * 60 * 1000; // 24 hours
     await user.save();
 
     const mailOptions = {
@@ -147,51 +117,47 @@ export async function sendVerificationEmail(req, res) {
       html: `<p>Your OTP is <strong>${otp}</strong>. It is valid for 24 hours.</p>`,
     };
 
-    // 6️⃣ Try sending email
-    try {
-      await transporter.sendMail(mailOptions);
-      console.log(`✅ OTP sent to ${user.email}`);
-    } catch (emailErr) {
-      console.error("❌ Email sending failed:", emailErr);
-    }
+    await transporter.sendMail(mailOptions);
+
+    res.status(200).json({ success: true, message: "OTP sent to email" });
   } catch (err) {
-    return res.status(500).json({ success: false, message: "Server error" });
+    console.error(err);
+    res.status(500).json({ success: false, message: "Server error" });
   }
 }
 
+// ✅ Verify OTP
 export async function verifyOtp(req, res) {
   const { userId, otp } = req.body;
   if (!userId || !otp) {
-    console.log("Missing fields");
     return res.status(400).json({ success: false, message: "Missing fields" });
   }
 
   try {
     const user = await userModel.findById(userId);
-    if (!user) {
+    if (!user)
       return res
         .status(404)
         .json({ success: false, message: "User not found" });
-    }
 
-    if (user.verifyOtp === "" || user.verifyOtp !== otp) {
+    if (user.otp !== otp) {
       return res.status(400).json({ success: false, message: "Invalid OTP" });
     }
 
-    if (user.verifyOtpExpireAt < Date.now()) {
+    if (user.otpExpireAt < Date.now()) {
       return res.status(400).json({ success: false, message: "OTP expired" });
     }
 
-    user.accountVerified = true;
+    user.isAccountVerfied = true;
     user.otp = "";
-    user.verifyOtpExpireAt = 0;
+    user.otpExpireAt = 0;
     await user.save();
 
-    return res
+    res
       .status(200)
       .json({ success: true, message: "Account verified successfully" });
   } catch (err) {
     console.error(err);
-    return res.status(500).json({ success: false, message: "Server error" });
+    res.status(500).json({ success: false, message: "Server error" });
   }
 }
