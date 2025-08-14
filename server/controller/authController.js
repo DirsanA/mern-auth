@@ -280,14 +280,16 @@ export async function verifyOtp(req, res) {
 // ✅ Check Authentication Status
 export async function isAuthenticated(req, res) {
   try {
+    const user = req.user; // comes from middleware
+
     res.status(200).json({
       success: true,
       message: "User is authenticated",
       data: {
-        id: req.user._id,
-        name: req.user.name,
-        email: req.user.email,
-        isAccountVerified: req.user.isAccountVerified,
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        isAccountVerified: user.isAccountVerified,
       },
     });
   } catch (error) {

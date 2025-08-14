@@ -13,7 +13,7 @@ const Header = () => {
         className="mb-6 rounded-full w-36 h-36"
       />
       <h1 className="flex items-center gap-2 mb-2 font-medium text-xl sm:text-3xl">
-        {user?.name || "Guest"} {/* Add fallback for name */}
+        {user?.name || "Welcome to our site"} {/* Add fallback for name */}
         <img className="w-8 aspect-square" src={assets.hand_wave} alt="wave" />
       </h1>
       <h2 className="mb-4 font-semibold text-3xl sm:text-5xl">

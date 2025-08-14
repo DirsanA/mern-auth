@@ -10,9 +10,7 @@ export const AppContextProvider = ({ children }) => {
   const [user, setUser] = useState({});
 
   // Configure axios to send credentials (cookies) with requests
-  useEffect(() => {
-    axios.defaults.withCredentials = true;
-  }, []);
+  axios.defaults.withCredentials = true;
 
   const getUser = async () => {
     try {
