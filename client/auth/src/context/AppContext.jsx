@@ -1,20 +1,48 @@
-import { createContext, useState } from "react";
+import { createContext, useState, useEffect } from "react";
+import { toast } from "react-toastify";
+import axios from "axios";
 
 export const AppContext = createContext();
 
-export const AppContextProvider = (props) => {
+export const AppContextProvider = ({ children }) => {
   const backendUrl = import.meta.env.VITE_BACKEND_URL;
-  const [isLogedIn, SetIsLogedIn] = useState(false);
-  const [user, SetUser] = useState({});
-  const value = {
-    backendUrl,
-    isLogedIn,
-    SetIsLogedIn,
-    user,
-    SetUser,
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [user, setUser] = useState({});
+
+  // Configure axios to send credentials (cookies) with requests
+  useEffect(() => {
+    axios.defaults.withCredentials = true;
+  }, []);
+
+  const getUser = async () => {
+    try {
+      const res = await axios.get(`${backendUrl}/api/user/data`);
+      if (res.data.success) {
+        setUser(res.data.data);
+        setIsLoggedIn(true);
+      }
+    } catch (error) {
+      console.error("User fetch error:", error);
+      if (error.response?.status === 401) {
+        setIsLoggedIn(false);
+        setUser({});
+      }
+    }
   };
 
-  return (
-    <AppContext.Provider value={value}>{props.children}</AppContext.Provider>
-  );
+  // Fetch user on initial load
+  useEffect(() => {
+    getUser();
+  }, []);
+
+  const value = {
+    backendUrl,
+    isLoggedIn,
+    setIsLoggedIn,
+    user,
+    setUser,
+    getUser,
+  };
+
+  return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
 };
