@@ -1,3 +1,4 @@
+// src/context/AppContext.js
 import { createContext, useState, useEffect } from "react";
 import { toast } from "react-toastify";
 import axios from "axios";
@@ -9,15 +10,19 @@ export const AppContextProvider = ({ children }) => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [user, setUser] = useState({});
 
-  // Configure axios to send credentials (cookies) with requests
+  // Always send cookies/session with every request
   axios.defaults.withCredentials = true;
 
+  // Function to fetch logged-in user data
   const getUser = async () => {
     try {
       const res = await axios.get(`${backendUrl}/api/user/data`);
       if (res.data.success) {
         setUser(res.data.data);
         setIsLoggedIn(true);
+      } else {
+        setIsLoggedIn(false);
+        setUser({});
       }
     } catch (error) {
       console.error("User fetch error:", error);
@@ -28,7 +33,7 @@ export const AppContextProvider = ({ children }) => {
     }
   };
 
-  // Fetch user on initial load
+  // Fetch user once on app load
   useEffect(() => {
     getUser();
   }, []);
