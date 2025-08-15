@@ -1,8 +1,11 @@
-import React from "react";
+import React, { useContext } from "react";
 import { assets } from "../assets/assets";
+import { AppContext } from "../context/AppContext.jsx";
 
 const EmailVerify = () => {
   const inputRef = React.useRef([]);
+
+  const { backendUrl, isLoggedIn, user, getUser } = useContext(AppContext);
 
   const handleKeyDown = (e, index) => {
     if (e.key === "Backspace") {
