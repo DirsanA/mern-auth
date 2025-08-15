@@ -4,11 +4,12 @@ import { AppContext } from "../context/AppContext.jsx";
 import { toast } from "react-toastify";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
+import { useEffect } from "react";
 
 const EmailVerify = () => {
   const navigate = useNavigate();
   const inputRef = React.useRef([]);
-  const { backendUrl, getUser } = useContext(AppContext);
+  const { backendUrl, getUser, isLoggedIn, user } = useContext(AppContext);
 
   const handleKeyDown = (e, index) => {
     if (e.key === "Backspace") {
@@ -75,6 +76,12 @@ const EmailVerify = () => {
       toast.error(err.response?.data?.message || "Failed to verify OTP.");
     }
   };
+
+  useEffect(() => {
+    if (isLoggedIn && user && user.isAccountVerified && navigate("/")) {
+      navigate("/");
+    }
+  }, [isLoggedIn, user, navigate]);
 
   return (
     <div className="flex justify-center items-center bg-gradient-to-br from-blue-200 to-purple-400 min-h-screen">

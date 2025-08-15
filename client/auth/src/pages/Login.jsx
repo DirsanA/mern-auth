@@ -29,6 +29,8 @@ const Login = () => {
         );
         toast.success("Registration successful! Please login.");
         setState("Login");
+        navigate("/");
+        await getUser(); //
       } else {
         // Handle login
         const { data } = await axios.post(
@@ -153,7 +155,7 @@ const Login = () => {
                 </p>
                 <button
                   type="button"
-                  onClick={() => navigate("/forgot-password")}
+                  onClick={() => navigate("/reset-password")}
                   className="mt-2 text-blue-400 hover:underline"
                 >
                   Forgot Password?
