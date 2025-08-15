@@ -158,14 +158,14 @@ export async function logoutUser(req, res) {
   });
 }
 
-// ✅ Send Verification Email
 export async function sendVerificationEmail(req, res) {
-  const { userId } = req.body;
+  // ✅ Get the ID from middleware instead of req.body
+  const userId = req.userId;
 
   if (!userId) {
-    return res.status(400).json({
+    return res.status(401).json({
       success: false,
-      message: "User ID is required",
+      message: "Unauthorized: No user ID found",
     });
   }
 
@@ -194,24 +194,24 @@ export async function sendVerificationEmail(req, res) {
     user.otpExpiresAt = otpExpiresAt;
     await user.save();
 
-    // Send email with OTP
-    const mailOptions = {
-      from: process.env.SEND_EMAIL,
-      to: user.email,
-      subject: "Your Verification Code",
-      html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2 style="color: #2563eb;">Email Verification</h2>
-          <p>Hello ${user.name},</p>
-          <p>Your verification code is:</p>
-          <h1 style="font-size: 2.5rem; letter-spacing: 0.5rem; color: #2563eb;">${otp}</h1>
-          <p>This code will expire in 24 hours.</p>
-          <p style="margin-top: 30px;">If you didn't request this, please ignore this email.</p>
-        </div>
-      `,
-    };
+    // // Send email with OTP
+    // const mailOptions = {
+    //   from: process.env.SEND_EMAIL,
+    //   to: user.email,
+    //   subject: "Your Verification Code",
+    //   html: `
+    //     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+    //       <h2 style="color: #2563eb;">Email Verification</h2>
+    //       <p>Hello ${user.name},</p>
+    //       <p>Your verification code is:</p>
+    //       <h1 style="font-size: 2.5rem; letter-spacing: 0.5rem; color: #2563eb;">${otp}</h1>
+    //       <p>This code will expire in 24 hours.</p>
+    //       <p style="margin-top: 30px;">If you didn't request this, please ignore this email.</p>
+    //     </div>
+    //   `,
+    // };
 
-    await transporter.sendMail(mailOptions);
+    // await transporter.sendMail(mailOptions);
 
     res.status(200).json({
       success: true,
@@ -236,6 +236,7 @@ export async function verifyOtp(req, res) {
       message: "User ID and OTP are required",
     });
   }
+  console.log(userId);
 
   try {
     const user = await userModel.findById(userId);

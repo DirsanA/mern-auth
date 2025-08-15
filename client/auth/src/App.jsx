@@ -5,7 +5,7 @@ import Register from "./pages/Register.jsx";
 import ResetPassword from "./pages/ResetPassword.jsx";
 import Home from "./pages/Home.jsx";
 import { ToastContainer } from "react-toastify";
-
+import EmailVerify from "./pages/EmailVerify.jsx";
 const App = () => {
   return (
     <div>
@@ -25,6 +25,7 @@ const App = () => {
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/reset-password" element={<ResetPassword />} />
+        <Route path="/verify-otp" element={<EmailVerify />} />
       </Routes>
     </div>
   );
