@@ -1,11 +1,14 @@
 import React, { useContext } from "react";
 import { assets } from "../assets/assets";
 import { AppContext } from "../context/AppContext.jsx";
+import { toast } from "react-toastify";
+import axios from "axios";
+import { useNavigate } from "react-router-dom";
 
 const EmailVerify = () => {
+  const navigate = useNavigate();
   const inputRef = React.useRef([]);
-
-  const { backendUrl, isLoggedIn, user, getUser } = useContext(AppContext);
+  const { backendUrl, getUser } = useContext(AppContext);
 
   const handleKeyDown = (e, index) => {
     if (e.key === "Backspace") {
@@ -18,6 +21,7 @@ const EmailVerify = () => {
   };
 
   const handleInput = (e, index) => {
+    e.target.value = e.target.value.replace(/\D/g, ""); // Allow only digits
     if (e.target.value.length === 1 && index < 5) {
       inputRef.current[index + 1].focus();
     }
@@ -27,8 +31,8 @@ const EmailVerify = () => {
     e.preventDefault();
     const pasteData = e.clipboardData
       .getData("text")
-      .replace(/\D/g, "") // only numbers
-      .slice(0, 6); // max 6 digits
+      .replace(/\D/g, "") // Only numbers
+      .slice(0, 6); // Max 6 digits
 
     pasteData.split("").forEach((char, i) => {
       if (inputRef.current[i]) {
@@ -43,9 +47,33 @@ const EmailVerify = () => {
     }
   };
 
-  const onSubmitHandler = (e) => {
+  const onSubmitHandler = async (e) => {
     e.preventDefault();
-    const otp = inputRef.current.map((input) => input.value).join("");
+    const otp = inputRef.current.map((input) => input.value.trim()).join("");
+
+    if (otp.length !== 6) {
+      toast.error("Please enter the full 6-digit OTP.");
+      return;
+    }
+
+    try {
+      const { data } = await axios.post(
+        `${backendUrl}/api/auth/verify-otp`,
+        { otp },
+        { withCredentials: true } // ✅ Send cookies for authentication
+      );
+
+      if (data.success) {
+        toast.success("Email verified successfully!");
+        getUser();
+        navigate("/");
+      } else {
+        toast.error(data.message || "Invalid OTP. Please try again.");
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error(err.response?.data?.message || "Failed to verify OTP.");
+    }
   };
 
   return (

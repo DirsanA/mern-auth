@@ -226,9 +226,9 @@ export async function sendVerificationEmail(req, res) {
   }
 }
 
-// ✅ Verify OTP
 export async function verifyOtp(req, res) {
-  const { userId, otp } = req.body;
+  const { otp } = req.body;
+  const userId = req.userId; // from userAuth
 
   if (!userId || !otp) {
     return res.status(400).json({
@@ -236,7 +236,6 @@ export async function verifyOtp(req, res) {
       message: "User ID and OTP are required",
     });
   }
-  console.log(userId);
 
   try {
     const user = await userModel.findById(userId);
@@ -247,7 +246,6 @@ export async function verifyOtp(req, res) {
       });
     }
 
-    // Check if OTP matches and is not expired
     if (user.otp !== otp || new Date(user.otpExpiresAt) < new Date()) {
       return res.status(400).json({
         success: false,
@@ -255,7 +253,6 @@ export async function verifyOtp(req, res) {
       });
     }
 
-    // Mark as verified and clear OTP
     user.isAccountVerified = true;
     user.otp = null;
     user.otpExpiresAt = null;
