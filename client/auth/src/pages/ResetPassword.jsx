@@ -2,20 +2,75 @@ import React from "react";
 import { assets } from "../assets/assets";
 import { useNavigate } from "react-router-dom";
 import { AppContext } from "../context/AppContext.jsx";
+import { toast } from "react-toastify";
+import axios from "axios";
 
 const ResetPassword = () => {
   const navigate = useNavigate();
 
+  // States
   const [email, setEmail] = React.useState("");
   const [newPassword, setNewPassword] = React.useState("");
   const [otp, setOtp] = React.useState("");
   const inputRef = React.useRef([]);
   const { backendUrl, getUser, isLoggedIn, user } =
     React.useContext(AppContext);
-  const [isEmailSent, setIsEmailSent] = React.useState("");
+  const [isEmailSent, setIsEmailSent] = React.useState(false);
   const [isOtpSent, setIsOtpSent] = React.useState(false);
   const [isNewPasswordSent, setIsNewPasswordSent] = React.useState(false);
 
+  const handleEmailSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      const { data } = await axios.post(
+        `${backendUrl}/api/auth/send-reset-otp`,
+        {
+          email,
+        }
+      );
+      if (data.success) {
+        setIsEmailSent(true);
+        toast.success("OTP sent to your email.");
+      } else {
+        toast.error("Failed to send OTP. Please try again.");
+      }
+    } catch (error) {
+      toast.error(error.message);
+    }
+  };
+
+  const handleOtpSubmit = async (e) => {
+    e.preventDefault();
+    const otpArray = inputRef.current.map((e) => e.value);
+    setOtp(otpArray.join(""));
+    setIsOtpSent(true);
+  };
+
+  const onSubmitNewPassword = async (e) => {
+    e.preventDefault();
+    try {
+      const { data } = await axios.post(
+        `${backendUrl}/api/auth/reset-password`,
+        {
+          email,
+          otp,
+          newPassword,
+        }
+      );
+      if (data.success) {
+        setIsNewPasswordSent(true);
+        toast.success("Password reset successfully.");
+        // Redirect to login or home page
+        navigate("/login");
+      } else {
+        toast.error("Failed to reset password. Please try again.");
+      }
+    } catch (error) {
+      toast.error(error.message);
+    }
+  };
+
+  // OTP input handlers
   const handleKeyDown = (e, index) => {
     if (e.key === "Backspace") {
       if (e.target.value === "" && index > 0) {
@@ -53,16 +108,19 @@ const ResetPassword = () => {
   };
 
   return (
-    <div className="flex md:flex-row flex-col justify-center items-center gap-6 bg-gradient-to-br from-blue-200 to-purple-400 p-4 min-h-screen">
+    <div className="flex md:flex-row flex-col justify-center items-start md:items-center gap-6 bg-gradient-to-br from-blue-200 to-purple-400 p-6 min-h-screen">
       <img
         src={assets.logo}
         alt="Logo"
         className="top-5 left-5 sm:left-5 absolute w-24 sm:w-28 cursor-pointer"
       />
 
-      {/* Email form */}
+      {/* Email Form */}
       {!isEmailSent && (
-        <form className="bg-slate-900 shadow-xl p-6 py-10 rounded-2xl w-full max-w-xs text-sm">
+        <form
+          onSubmit={handleEmailSubmit}
+          className="bg-slate-900 shadow-xl p-6 py-10 rounded-2xl w-full max-w-xs text-sm"
+        >
           <h1 className="mb-4 font-bold text-white text-2xl text-center">
             Reset Password
           </h1>
@@ -75,6 +133,8 @@ const ResetPassword = () => {
               type="email"
               placeholder="Enter your email"
               required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
               className="flex-1 bg-transparent outline-none text-white text-sm placeholder-gray-400"
             />
           </div>
@@ -87,10 +147,10 @@ const ResetPassword = () => {
         </form>
       )}
 
-      {/* OTP input */}
-      {!isOtpSent && isEmailSent && (
+      {/* OTP Form */}
+      {isEmailSent && !isOtpSent && (
         <form
-          onSubmit={(e) => e.preventDefault()}
+          onSubmit={handleOtpSubmit}
           className="bg-slate-900 shadow-lg p-8 rounded-lg w-full max-w-sm text-sm"
         >
           <h1 className="mb-4 font-semibold text-white text-2xl text-center">
@@ -120,10 +180,10 @@ const ResetPassword = () => {
         </form>
       )}
 
-      {/* New password form */}
-      {!isNewPasswordSent && isOtpSent && (
+      {/* New Password Form */}
+      {isOtpSent && !isNewPasswordSent && (
         <form
-          onSubmit={(e) => e.preventDefault()}
+          onSubmit={onSubmitNewPassword}
           className="bg-slate-900 shadow-xl p-6 py-10 rounded-2xl w-full max-w-xs text-sm"
         >
           <h1 className="mb-4 font-bold text-white text-2xl text-center">
@@ -138,6 +198,8 @@ const ResetPassword = () => {
               type="password"
               placeholder="Enter New Password"
               required
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
               className="flex-1 bg-transparent outline-none text-white text-sm placeholder-gray-400"
             />
           </div>
