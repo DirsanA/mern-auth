@@ -10,11 +10,11 @@ const Navbar = () => {
   const sendVerificationOtp = async () => {
     try {
       axios.defaults.withCredentials = true;
+      navigate("/verify-otp");
       const { data } = await axios.post(
         `${backendUrl}/api/auth/send-verification`
       );
       if (data.success) {
-        navigate("/verify-otp");
         toast.success("Verification OTP sent");
       } else {
         toast.error(data.message || "Verification failed");
