@@ -2,6 +2,10 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import userModel from "../models/userModel.js";
 import transporter from "../config/nodemailer.js";
+import {
+  EMAIL_VERIFY_TEMPLATE,
+  PASSWORD_RESET_TEMPLATE,
+} from "../config/emailTemplete.js";
 
 // Helper function to generate JWT token
 const generateToken = (userId) => {
@@ -194,24 +198,18 @@ export async function sendVerificationEmail(req, res) {
     user.otpExpiresAt = otpExpiresAt;
     await user.save();
 
-    // // Send email with OTP
-    // const mailOptions = {
-    //   from: process.env.SEND_EMAIL,
-    //   to: user.email,
-    //   subject: "Your Verification Code",
-    //   html: `
-    //     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-    //       <h2 style="color: #2563eb;">Email Verification</h2>
-    //       <p>Hello ${user.name},</p>
-    //       <p>Your verification code is:</p>
-    //       <h1 style="font-size: 2.5rem; letter-spacing: 0.5rem; color: #2563eb;">${otp}</h1>
-    //       <p>This code will expire in 24 hours.</p>
-    //       <p style="margin-top: 30px;">If you didn't request this, please ignore this email.</p>
-    //     </div>
-    //   `,
-    // };
+    // Send email with OTP
+    const mailOptions = {
+      from: process.env.SEND_EMAIL,
+      to: user.email,
+      subject: "Your Verification Code",
+      html: EMAIL_VERIFY_TEMPLATE.replace("{{email}}", user.email).replace(
+        "{{otp}}",
+        otp
+      ),
+    };
 
-    // await transporter.sendMail(mailOptions);
+    await transporter.sendMail(mailOptions);
 
     res.status(200).json({
       success: true,
@@ -335,21 +333,13 @@ export async function resetOtpSend(req, res) {
 
     // 4. Send email (async - don't await)
     const mailOptions = {
-      from: `"${process.env.EMAIL_SENDER_NAME}" <${process.env.SEND_EMAIL}>`,
+      from: process.env.SEND_EMAIL,
       to: user.email,
       subject: "Your Password Reset Code",
-      html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2 style="color: #2563eb;">Password Reset Request</h2>
-          <p>Hello ${user.name},</p>
-          <p>We received a request to reset your password. Your verification code is:</p>
-          <div style="background: #f8f9fa; padding: 20px; text-align: center; margin: 20px 0; border-radius: 5px;">
-            <h1 style="font-size: 2rem; letter-spacing: 0.5rem; color: #2563eb; margin: 0;">${resetOtp}</h1>
-          </div>
-          <p>This code will expire in 15 minutes.</p>
-          <p style="color: #6c757d; font-size: 0.9rem;">If you didn't request this, please ignore this email or contact support if you have concerns.</p>
-        </div>
-      `,
+      html: PASSWORD_RESET_TEMPLATE.replace("{{otp}}", resetOtp).replace(
+        "{{email}}",
+        user.email
+      ),
     };
 
     transporter
